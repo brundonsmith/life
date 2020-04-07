@@ -13,6 +13,7 @@ const WHITE: [f32;4] = [1.0; 4];
 const SQUARE_SIZE: f64 = 5.0;
 const WINDOW_SIZE: u32 = 1024;
 const GFX_CONTEXT_OFFSET: f64 = (WINDOW_SIZE / 2) as f64;
+const MILLIS_PER_FRAME: u128 = 10;
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
@@ -33,15 +34,18 @@ fn main() {
         let mut previous_update = UNIX_EPOCH;
 
         while let Some(e) = window.next() {
-            if previous_update.elapsed().map(|d| d.as_millis()).unwrap_or(0) > 10 {
-                let step_start = SystemTime::now();
+            if previous_update.elapsed().map(|d| d.as_millis()).unwrap_or(0) > MILLIS_PER_FRAME {
+                // NOTE: Uncomment for timing info
+                // let step_start = SystemTime::now();
                 world.step();
-                println!("Step took: {}ms", step_start.elapsed().map(|d| d.as_micros()).unwrap_or(0) as f32 / 1000.0);
+                // println!("Step took: {}ms", step_start.elapsed().map(|d| d.as_micros()).unwrap_or(0) as f32 / 1000.0);
                 previous_update = SystemTime::now();
             }
             
             window.draw_2d(&e, |context, graphics, _| {
                 clear(BLACK, graphics);
+
+                // Translate by 1/2 the window size, to center 0,0 in the middle of the window
                 let context = context.trans(GFX_CONTEXT_OFFSET, GFX_CONTEXT_OFFSET);
                 
                 for loc in world.current_buffer().keys() {
