@@ -5,31 +5,28 @@ use std::collections::hash_map::{HashMap};
 pub struct Loc {
   pub row: i64,
   pub col: i64,
-
-  //neighbors: Box<[Loc;8]>
 }
 
 impl Loc {
-
   pub fn new(row: i64, col: i64) -> Self {
     Self {
       row,
       col,
     }
   }
-}
 
-fn neighbors(loc: &Loc) -> [Loc;8] {
-  [
-    Loc::new(loc.row + 1, loc.col + 1),
-    Loc::new(loc.row + 1, loc.col - 1),
-    Loc::new(loc.row - 1, loc.col + 1),
-    Loc::new(loc.row - 1, loc.col - 1),
-    Loc::new(loc.row + 1, loc.col    ),
-    Loc::new(loc.row    , loc.col + 1),
-    Loc::new(loc.row - 1, loc.col    ),
-    Loc::new(loc.row    , loc.col - 1),
-  ]
+  pub fn neighbors(&self) -> [Loc;8] {
+    [
+      Loc::new(self.row + 1, self.col + 1),
+      Loc::new(self.row + 1, self.col - 1),
+      Loc::new(self.row - 1, self.col + 1),
+      Loc::new(self.row - 1, self.col - 1),
+      Loc::new(self.row + 1, self.col    ),
+      Loc::new(self.row    , self.col + 1),
+      Loc::new(self.row - 1, self.col    ),
+      Loc::new(self.row    , self.col - 1),
+    ]
+  }
 }
 
 
@@ -50,7 +47,12 @@ impl World {
     }
   }
 
-  pub fn from_data(data: &str, dead_char: char, alive_char: char) -> Result<Self,String> {
+  /**
+   * Initialize from a configuration string. Assumes string is a grid of 
+   * periods and asterisks (rows separated by line breaks), where asterisks
+   * are "alive" cells and periods are dead cells.
+   */
+  pub fn from_configuration(data: &str, dead_char: char, alive_char: char) -> Result<Self,String> {
     let mut world = Self::new();
 
     let mut row = 0;
@@ -90,20 +92,30 @@ impl World {
     }
   }
 
+  /**
+   * Get aliveness status of a location in the world.
+   */
   pub fn get(&self, loc: &Loc) -> bool {
-    get(self.current_buffer(), loc)
+    is_alive(self.current_buffer(), loc)
   }
 
+  /**
+   * Set aliveness status of a location in the world.
+   */
   pub fn set(&mut self, loc: &Loc, alive: bool) {
     let next_buffer = self.next_buffer();
 
+    // If this location is already in the HashMap, set its value. Otherwise,
+    // add it as a new entry to the HashMap.
     match next_buffer.get_mut(loc) {
       Some(val) => *val = alive,
       None => { next_buffer.insert(*loc, alive); }
     };
 
     if alive {
-      for neighbor in neighbors(loc).iter() {
+      // If this location is now alive, we need to add any of its neighbors not 
+      // already in the HashMap, to it.
+      for neighbor in loc.neighbors().iter() {
         if next_buffer.get(neighbor).is_none() {
           next_buffer.insert(*neighbor, false);
         }
@@ -111,38 +123,49 @@ impl World {
     }
   }
 
+  /**
+   * One "tick" of the world.
+   */
   pub fn step(&mut self) {
     let keys: Vec<Loc> = self.current_buffer().keys().map(|&loc| loc).collect();
 
-    //println!("{}", keys.len());
-
     for loc in keys.iter() {
       let alive: bool = self.get(&loc);
-      let neighbors: [Loc;8] = neighbors(&loc);
-      let alive_neighbors: usize = neighbors.iter().map(|neighbor| get(self.current_buffer(), neighbor)).filter(|alive| *alive).count();
+      let neighbors: [Loc;8] = loc.neighbors();
+      let alive_neighbors: usize = neighbors.iter()
+        .map(|neighbor| is_alive(self.current_buffer(), neighbor))
+        .filter(|alive| *alive)
+        .count();
 
-      self.set(&loc, new_status(alive, alive_neighbors));
+      // If this cell is dead and doesn't have any alive neighbors, we don't 
+      // need to check on the next cycle for whether or not it might become 
+      // alive, so we can omit it altogether from the next HashMap.
+      if alive_neighbors > 0 {
+        self.set(&loc, new_status(alive, alive_neighbors));
+      }
     }
 
-    /*
-    let keys: Vec<Loc> = self.next_buffer().keys().map(|&loc| loc).collect();
-    for loc in keys.iter() {
-      let alive: bool = get(self.next_buffer(), loc);
-      let alive_neighbors: usize = neighbors(&loc).iter().map(|neighbor| get(self.next_buffer(), neighbor)).filter(|alive| *alive).count();
-
-      if !alive && alive_neighbors == 0 {
-        self.next_buffer().remove(&loc);
-      }
-    }*/
-
+    // Toggle buffers
     self.using_buffer_1 = !self.using_buffer_1;
+
+    // Clear the old buffer
+    self.next_buffer().clear();
   }
 }
 
-fn get(buffer: &HashMap<Loc,bool>, loc: &Loc) -> bool {
+/**
+ * Whether or not the supplied location is alive, based on the supplied buffer.
+ */
+fn is_alive(buffer: &HashMap<Loc,bool>, loc: &Loc) -> bool {
   *buffer.get(loc).unwrap_or(&false)
 }
 
+
+/**
+ * Given the status of one cell and the number of its neighbors that are alive,
+ * determine whether it's alive in the next step. This is the core rule of 
+ * Conway's Game of Life.
+ */
 fn new_status(alive: bool, alive_neighbors: usize) -> bool {
   if alive && (alive_neighbors == 2 || alive_neighbors == 3) {
     true
