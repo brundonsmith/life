@@ -21,7 +21,7 @@ have bothered to do all of them.
 
 Assuming you have `cargo` insalled, just execute `cargo run <CONFIG>` where
 `<CONFIG>` is the name of one of the configurations under `src/configurations/`
-(without `.txt`). For example, to run `glider.txt`, type:
+(without `.txt`). So for example, to run `glider.txt`, type:
 
 ```
 cargo run glider
@@ -41,7 +41,7 @@ construted based off of the current one, in an independent data structure, and
 then the two are "flipped" and the new one becomes the "current" one, their
 roles reversed in the next cycle.
 
-The second problem was tricker. The most obvious data structure for Life is a
+The second problem was trickier. The most obvious data structure for Life is a
 2D array. But that will have walls, and while it could be re-allocated as 
 necessary to grow indefinitely, this would get extremely memory-inefficient for,
 say, a glider that shoots off in one direction and leaves nothing behind.
