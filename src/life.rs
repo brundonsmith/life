@@ -68,6 +68,8 @@ impl World {
       } else if c == '\n' {
         row += 1;
         col = 0;
+      } else if c == '\r' {
+        // do nothing
       } else {
         return Err(format!("Invalid char '{}' at {}, {}", c, row, col));
       }
