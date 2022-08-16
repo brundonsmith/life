@@ -37,7 +37,7 @@ localized completely, so you can't just overwrite state in-place
 any direction, so it's best if they don't hit a wall
 
 I solved the first problem with a dual-buffer system. The next board state is 
-construted based off of the current one, in an independent data structure, and 
+constructed based off of the current one, in an independent data structure, and 
 then the two are "flipped" and the new one becomes the "current" one, their
 roles reversed in the next cycle.
 
